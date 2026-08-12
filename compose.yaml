@@ -1,0 +1,78 @@
+name: ${COMPOSE_PROJECT_NAME:-uv-cuda-experiments}
+
+x-uv-cuda-base: &uv-cuda-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  env_file:
+    - .env
+  environment:
+    HF_HOME: /root/.cache/huggingface
+    HUGGINGFACE_HUB_CACHE: /root/.cache/huggingface/hub
+    UV_CACHE_DIR: /root/.cache/uv
+    XDG_CACHE_HOME: /root/.cache
+    WORKSPACE_CONTAINER_DIR: ${WORKSPACE_CONTAINER_DIR:-/workspace/project}
+    HF_CACHE_CONTAINER_PATH: ${HF_CACHE_CONTAINER_PATH:-/workspace/project/.cache/huggingface}
+    UV_CACHE_CONTAINER_PATH: ${UV_CACHE_CONTAINER_PATH:-/workspace/project/.cache/uv}
+  gpus: ${DOCKER_GPUS:-all}
+  volumes:
+    - type: bind
+      source: ${WORKSPACE_HOST_BIND:-..}
+      target: ${WORKSPACE_CONTAINER_DIR:-/workspace/project}
+    - type: bind
+      source: ${HF_CACHE_BIND:-../.cache/huggingface}
+      target: ${HF_CACHE_CONTAINER_PATH:-/workspace/project/.cache/huggingface}
+    - type: bind
+      source: ${UV_CACHE_BIND:-../.cache/uv}
+      target: ${UV_CACHE_CONTAINER_PATH:-/workspace/project/.cache/uv}
+    - type: bind
+      source: ${HF_CACHE_BIND:-../.cache/huggingface}
+      target: /root/.cache/huggingface
+    - type: bind
+      source: ${UV_CACHE_BIND:-../.cache/uv}
+      target: /root/.cache/uv
+  working_dir: ${WORKSPACE_CONTAINER_DIR:-/workspace/project}
+  stdin_open: true
+  tty: true
+  command: bash
+
+services:
+  cuda128-runtime:
+    <<: *uv-cuda-base
+    image: uv-cuda-experiments:cuda12.8-runtime
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CUDA_IMAGE: nvidia/cuda:12.8.1-runtime-ubuntu24.04
+        PRIMARY_CUDA: "12.8"
+
+  cuda128-devel:
+    <<: *uv-cuda-base
+    image: uv-cuda-experiments:cuda12.8-devel
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CUDA_IMAGE: nvidia/cuda:12.8.1-devel-ubuntu24.04
+        PRIMARY_CUDA: "12.8"
+
+  cuda130-runtime:
+    <<: *uv-cuda-base
+    image: uv-cuda-experiments:cuda13.0-runtime
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CUDA_IMAGE: nvidia/cuda:13.0.0-runtime-ubuntu24.04
+        PRIMARY_CUDA: "13.0"
+
+  cuda130-devel:
+    <<: *uv-cuda-base
+    image: uv-cuda-experiments:cuda13.0-devel
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CUDA_IMAGE: nvidia/cuda:13.0.0-devel-ubuntu24.04
+        PRIMARY_CUDA: "13.0"
