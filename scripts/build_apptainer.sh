@@ -5,30 +5,36 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 cd "${ROOT_DIR}"
 
-SERVICE="${1:-cuda130-devel}"
+# Accept either:
+# 1) a known alias (cuda128-runtime, cuda128-devel, cuda130-runtime, cuda130-devel)
+# 2) a full Docker image reference (e.g. nvidia/cuda:12.8.1-devel-ubuntu24.04)
+IMAGE_INPUT="${1:-cuda130-devel}"
 DIST_DIR="${DIST_DIR:-dist}"
 mkdir -p "${DIST_DIR}"
 
-case "${SERVICE}" in
-  cuda128-runtime) IMAGE_TAG="uv-cuda-experiments:cuda12.8-runtime" ;;
-  cuda128-devel) IMAGE_TAG="uv-cuda-experiments:cuda12.8-devel" ;;
-  cuda130-runtime) IMAGE_TAG="uv-cuda-experiments:cuda13.0-runtime" ;;
-  cuda130-devel) IMAGE_TAG="uv-cuda-experiments:cuda13.0-devel" ;;
+case "${IMAGE_INPUT}" in
+  cuda128-runtime) DOCKER_IMAGE="nvidia/cuda:12.8.1-runtime-ubuntu24.04" ;;
+  cuda128-devel)   DOCKER_IMAGE="nvidia/cuda:12.8.1-devel-ubuntu24.04" ;;
+  cuda130-runtime) DOCKER_IMAGE="nvidia/cuda:13.0.0-runtime-ubuntu24.04" ;;
+  cuda130-devel)   DOCKER_IMAGE="nvidia/cuda:13.0.0-devel-ubuntu24.04" ;;
   *)
-    echo "Unsupported service: ${SERVICE}" >&2
-    exit 1
+    # Treat input as direct image reference from Docker Hub (or any registry)
+    DOCKER_IMAGE="${IMAGE_INPUT}"
     ;;
 esac
 
-IMAGE_TAG="${IMAGE_TAG_OVERRIDE:-${IMAGE_TAG}}"
-TAR_PATH="${DIST_DIR}/${SERVICE}.tar"
-SIF_PATH="${DIST_DIR}/${SERVICE}.sif"
+DOCKER_IMAGE="${IMAGE_TAG_OVERRIDE:-${DOCKER_IMAGE}}"
 
-if [[ "${SKIP_DOCKER_BUILD:-0}" != "1" ]]; then
-  docker compose build "${SERVICE}"
+# Safe output name for files
+SAFE_NAME="$(echo "${DOCKER_IMAGE}" | tr '/:@' '___')"
+TAR_PATH="${DIST_DIR}/${SAFE_NAME}.tar"
+SIF_PATH="${DIST_DIR}/${SAFE_NAME}.sif"
+
+if [[ "${SKIP_DOCKER_PULL:-0}" != "1" ]]; then
+  docker pull "${DOCKER_IMAGE}"
 fi
 
-docker save "${IMAGE_TAG}" -o "${TAR_PATH}"
+docker save "${DOCKER_IMAGE}" -o "${TAR_PATH}"
 
 APPTAINER_BIN="${APPTAINER_BIN:-apptainer}"
 APPTAINER_ARGS=()
@@ -38,4 +44,4 @@ fi
 
 "${APPTAINER_BIN}" build "${APPTAINER_ARGS[@]}" "${SIF_PATH}" "docker-archive://${TAR_PATH}"
 
-echo "Built ${SIF_PATH} from ${IMAGE_TAG}"
+echo "Built ${SIF_PATH} from ${DOCKER_IMAGE}"

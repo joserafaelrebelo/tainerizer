@@ -71,10 +71,14 @@ Or with the script (recommended):
 
 ## Apptainer Usage
 
-Build a `.sif` from a compose service:
+Build a `.sif` by pulling from Docker Hub (alias or full image reference):
 
 ```bash
+# Alias (default if omitted: cuda130-devel)
 ./scripts/build_apptainer.sh cuda130-devel
+
+# Full Docker image reference
+./scripts/build_apptainer.sh nvidia/cuda:13.0.0-devel-ubuntu24.04
 ```
 
 Optional fakeroot build:
@@ -83,11 +87,21 @@ Optional fakeroot build:
 APPTAINER_FAKEROOT=1 ./scripts/build_apptainer.sh cuda130-devel
 ```
 
+Useful options:
+
+```bash
+# Custom output directory
+DIST_DIR=dist ./scripts/build_apptainer.sh cuda130-runtime
+
+# Skip pull and use local cached image
+SKIP_DOCKER_PULL=1 ./scripts/build_apptainer.sh cuda130-devel
+```
+
 Run Apptainer with all binds and GPU enabled:
 
 ```bash
-./scripts/run_apptainer.sh dist/cuda130-devel.sif
-./scripts/run_apptainer.sh dist/cuda130-devel.sif bash -lc 'cd "$WORKSPACE_CONTAINER_DIR" && nvidia-smi'
+./scripts/run_apptainer.sh dist/nvidia_cuda_13.0.0-devel-ubuntu24.04.sif
+./scripts/run_apptainer.sh dist/nvidia_cuda_13.0.0-devel-ubuntu24.04.sif bash -lc 'cd "$WORKSPACE_CONTAINER_DIR" && nvidia-smi'
 ```
 
 ## Slurm Usage
