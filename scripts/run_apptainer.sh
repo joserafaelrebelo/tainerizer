@@ -22,18 +22,23 @@ WORKSPACE_NAME="$(basename "${WORKSPACE_HOST_ABS}")"
 export WORKSPACE_CONTAINER_DIR="${WORKSPACE_CONTAINER_DIR:-/workspace/${WORKSPACE_NAME}}"
 export HF_CACHE_BIND="${HF_CACHE_BIND:-../.cache/huggingface}"
 export UV_CACHE_BIND="${UV_CACHE_BIND:-../.cache/uv}"
+export ROOT_CACHE_BIND="${ROOT_CACHE_BIND:-../.cache/root}"
 export HF_CACHE_CONTAINER_PATH="${HF_CACHE_CONTAINER_PATH:-${WORKSPACE_CONTAINER_DIR}/.cache/huggingface}"
 export UV_CACHE_CONTAINER_PATH="${UV_CACHE_CONTAINER_PATH:-${WORKSPACE_CONTAINER_DIR}/.cache/uv}"
+export ROOT_CACHE_CONTAINER_PATH="${ROOT_CACHE_CONTAINER_PATH:-${WORKSPACE_CONTAINER_DIR}/.cache/root}"
 
-mkdir -p "${HF_CACHE_BIND}" "${UV_CACHE_BIND}"
+mkdir -p "${HF_CACHE_BIND}" "${UV_CACHE_BIND}" "${ROOT_CACHE_BIND}"
+mkdir -p "${ROOT_CACHE_BIND}/matplotlib" "${ROOT_CACHE_BIND}/warp" "${ROOT_CACHE_BIND}/ov/texturecache"
 
 APPTAINER_BIN="${APPTAINER_BIN:-apptainer}"
 BIND_ARGS=(
   --bind "${WORKSPACE_HOST_BIND}:${WORKSPACE_CONTAINER_DIR}"
   --bind "${HF_CACHE_BIND}:${HF_CACHE_CONTAINER_PATH}"
   --bind "${UV_CACHE_BIND}:${UV_CACHE_CONTAINER_PATH}"
+  --bind "${ROOT_CACHE_BIND}:${ROOT_CACHE_CONTAINER_PATH}"
   --bind "${HF_CACHE_BIND}:/root/.cache/huggingface"
   --bind "${UV_CACHE_BIND}:/root/.cache/uv"
+  --bind "${ROOT_CACHE_BIND}:/root/.cache"
 )
 
 ENV_ARGS=()
@@ -42,6 +47,11 @@ while IFS= read -r key; do
     ENV_ARGS+=(--env "${key}=${!key}")
   fi
 done < <(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' .env | cut -d '=' -f 1)
+
+ENV_ARGS+=(--env "XDG_CACHE_HOME=/root/.cache")
+ENV_ARGS+=(--env "MPLCONFIGDIR=/root/.cache/matplotlib")
+ENV_ARGS+=(--env "WARP_CACHE_DIR=/root/.cache/warp")
+ENV_ARGS+=(--env "OMNI_USER_CACHE_DIR=/root/.cache/ov")
 
 if [[ $# -gt 0 ]]; then
   exec "${APPTAINER_BIN}" exec --nv "${ENV_ARGS[@]}" "${BIND_ARGS[@]}" "${SIF_PATH}" "$@"

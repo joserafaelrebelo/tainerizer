@@ -71,40 +71,68 @@ Or with the script (recommended):
 
 ## Apptainer Usage
 
-Build a `.sif` by pulling from Docker Hub (alias or full image reference):
+Build a `.sif` by pulling directly from Docker Hub via Apptainer (no Docker required).
+Pass any Docker Hub image reference as the argument:
 
 ```bash
-# Alias (default if omitted: cuda130-devel)
-./scripts/build_apptainer.sh cuda130-devel
-
-# Full Docker image reference
-./scripts/build_apptainer.sh nvidia/cuda:13.0.0-devel-ubuntu24.04
+./scripts/build_apptainer.sh rafaeljose/tainerized:cu13-runtime
+./scripts/build_apptainer.sh rafaeljose/tainerized:cu13-devel
 ```
 
 Optional fakeroot build:
 
 ```bash
-APPTAINER_FAKEROOT=1 ./scripts/build_apptainer.sh cuda130-devel
+APPTAINER_FAKEROOT=1 ./scripts/build_apptainer.sh rafaeljose/tainerized:cu13-runtime
 ```
 
 Useful options:
 
 ```bash
 # Custom output directory
-DIST_DIR=dist ./scripts/build_apptainer.sh cuda130-runtime
+DIST_DIR=dist ./scripts/build_apptainer.sh rafaeljose/tainerized:cu13-runtime
 
-# Skip pull and use local cached image
-SKIP_DOCKER_PULL=1 ./scripts/build_apptainer.sh cuda130-devel
+# Override the image (e.g. for CI pin)
+IMAGE_TAG_OVERRIDE=rafaeljose/tainerized:cu13-devel ./scripts/build_apptainer.sh ignored
 ```
 
 Run Apptainer with all binds and GPU enabled:
 
 ```bash
-./scripts/run_apptainer.sh dist/nvidia_cuda_13.0.0-devel-ubuntu24.04.sif
-./scripts/run_apptainer.sh dist/nvidia_cuda_13.0.0-devel-ubuntu24.04.sif bash -lc 'cd "$WORKSPACE_CONTAINER_DIR" && nvidia-smi'
+./scripts/run_apptainer.sh dist/rafaeljose_tainerized_cu13-runtime.sif
+./scripts/run_apptainer.sh dist/rafaeljose_tainerized_cu13-runtime.sif bash -lc 'cd "$WORKSPACE_CONTAINER_DIR" && nvidia-smi'
 ```
 
-## Slurm Usage
+## Slurm Interactive Session
+
+Start an interactive shell on a Slurm node with GPU, all repo bind mounts, and your `.env` config loaded:
+
+```bash
+./scripts/slurm_interactive.sh dist/rafaeljose_tainerized_cu13-runtime.sif
+```
+
+Override any Slurm resource defaults via env vars:
+
+```bash
+SLURM_TIME=08:00:00 SLURM_PARTITION=gpu SLURM_GPUS=2 \
+  ./scripts/slurm_interactive.sh dist/rafaeljose_tainerized_cu13-runtime.sif
+```
+
+Available overrides (with defaults):
+
+| Variable           | Default     |
+|--------------------|-------------|
+| `SLURM_NODES`      | `1`         |
+| `SLURM_NTASKS`     | `1`         |
+| `SLURM_CPUS`       | `16`        |
+| `SLURM_MEM`        | `64G`       |
+| `SLURM_GPUS`       | `1`         |
+| `SLURM_TIME`       | `04:00:00`  |
+| `SLURM_PARTITION`  | `ovx01`     |
+| `SLURM_ACCOUNT`    | *(unset)*   |
+
+The workspace, HuggingFace cache, and uv cache are mounted exactly as in Docker (driven by `.env`).
+
+## Slurm Batch Usage
 
 Submit the included Slurm wrapper:
 

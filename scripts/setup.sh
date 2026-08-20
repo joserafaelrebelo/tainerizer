@@ -20,6 +20,8 @@ upsert_env() {
   if grep -q "^${key}=" .env; then
     sed -i "s|^${key}=.*|${key}=${value}|" .env
   else
+    # Ensure file ends with a newline before appending
+    [[ -s .env && "$(tail -c1 .env | wc -l)" -eq 0 ]] && echo >> .env
     printf '%s=%s\n' "${key}" "${value}" >> .env
   fi
 }
