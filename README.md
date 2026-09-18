@@ -69,6 +69,37 @@ Or with the script (recommended):
 ./scripts/run_docker.sh cuda130-devel bash -lc 'cd "$WORKSPACE_CONTAINER_DIR" && uv --version'
 ```
 
+### X11 GUI applications
+
+Enable X11 forwarding for desktop viewers, simulators, and other GUI applications:
+
+```bash
+GUI=1 ./scripts/run_docker.sh cuda130-devel
+# Equivalent Make target:
+make run CUDA=13.0 FLAVOR=devel GUI=1
+```
+
+The GUI override forwards the host display and Xauthority credentials, mounts the
+X11 socket, and enables the NVIDIA `graphics` and `display` driver capabilities
+through `NVIDIA_DRIVER_CAPABILITIES=all`. GPU devices continue to be allocated by
+the base Compose configuration (`DOCKER_GPUS=all` by default), so the host must
+have a working NVIDIA driver and NVIDIA Container Toolkit installation.
+
+Verify GPU access independently of the GUI application with:
+
+```bash
+GUI=1 ./scripts/run_docker.sh cuda130-devel nvidia-smi
+```
+
+GUI mode requires an active X11 or XWayland session with `DISPLAY` set. If your
+Xauthority file is elsewhere, pass it explicitly:
+
+```bash
+GUI=1 XAUTHORITY=/path/to/.Xauthority ./scripts/run_docker.sh cuda130-devel
+```
+
+Headless behavior remains the default when `GUI` is unset or set to `0`.
+
 ## Apptainer Usage
 
 Build a `.sif` by pulling directly from Docker Hub via Apptainer (no Docker required).

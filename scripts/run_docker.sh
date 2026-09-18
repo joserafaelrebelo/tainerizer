@@ -27,8 +27,24 @@ export UV_CACHE_CONTAINER_PATH="${UV_CACHE_CONTAINER_PATH:-${WORKSPACE_CONTAINER
 
 mkdir -p "${HF_CACHE_BIND}" "${UV_CACHE_BIND}"
 
-if [[ $# -gt 0 ]]; then
-  exec docker compose run --rm "${SERVICE}" "$@"
+COMPOSE_ARGS=()
+if [[ "${GUI:-0}" == "1" ]]; then
+  if [[ -z "${DISPLAY:-}" ]]; then
+    echo "GUI=1 requires DISPLAY to be set on the host." >&2
+    exit 1
+  fi
+
+  export XAUTHORITY="${XAUTHORITY:-${HOME}/.Xauthority}"
+  if [[ ! -e "${XAUTHORITY}" ]]; then
+    echo "GUI=1 requires an Xauthority file at ${XAUTHORITY}." >&2
+    exit 1
+  fi
+
+  COMPOSE_ARGS=(-f compose.yaml -f compose.gui.yaml)
 fi
 
-exec docker compose run --rm "${SERVICE}"
+if [[ $# -gt 0 ]]; then
+  exec docker compose "${COMPOSE_ARGS[@]}" run --rm "${SERVICE}" "$@"
+fi
+
+exec docker compose "${COMPOSE_ARGS[@]}" run --rm "${SERVICE}"

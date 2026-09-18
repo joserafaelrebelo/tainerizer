@@ -43,7 +43,8 @@ RUN apt-get update \
 
 RUN git lfs install --system \
     && curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh \
-    && uv python install 3.10
+    && uv python install 3.10 \
+    && uv tool install hf
 
 RUN mkdir -p /root/.cache/huggingface /root/.cache/uv
 
@@ -54,7 +55,7 @@ ENV UV_LINK_MODE=copy \
     XDG_CACHE_HOME=/root/.cache \
     WORKSPACE_DIR=/workspace \
     CUDA_PRIMARY=${PRIMARY_CUDA} \
-    PATH=/usr/local/cuda-${PRIMARY_CUDA}/bin:/usr/local/cuda-13.0/bin:/usr/local/cuda-12.8/bin:/usr/local/bin:${PATH} \
+    PATH=/root/.local/bin:/usr/local/cuda-${PRIMARY_CUDA}/bin:/usr/local/cuda-13.0/bin:/usr/local/cuda-12.8/bin:/usr/local/bin:${PATH} \
     LD_LIBRARY_PATH=/usr/local/cuda-${PRIMARY_CUDA}/lib64:/usr/local/cuda-13.0/lib64:/usr/local/cuda-12.8/lib64:${LD_LIBRARY_PATH}
 
 WORKDIR /workspace
